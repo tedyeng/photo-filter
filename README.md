@@ -17,6 +17,7 @@ It automatically groups your photos into distinct burst events and uses AI-assis
   - **Landscape/Action Mode:** If no faces are detected, it falls back to evaluating global edge sharpness (Laplacian variance) and visual balance.
 - **📁 Automatic RAW Pairing:** When the best JPEG is selected, its corresponding RAW file (e.g., `.ARW`, `.CR3`, `.NEF`) is automatically identified and moved with it.
 - **📊 Detailed Reporting:** Generates a comprehensive `defects.csv` report mapping every processed file to its specific `Burst ID`, score, and the reason it was kept or rejected.
+- **⏳ Progress & Time Tracking:** Visual progress bars (via `tqdm`) display real-time feedback during EXIF extraction and burst processing, alongside total execution time reporting.
 - **⚡ GPU Acceleration:** Optional CUDA support for lightning-fast face detection when processing thousands of photos.
 
 ---
@@ -33,7 +34,7 @@ This project uses **[uv](https://github.com/astral-sh/uv)** for fast, reliable d
 Clone the repository and set up the virtual environment:
 
 ```bash
-git clone https://github.com/yourusername/photo-filter.git
+git clone https://github.com/tedyeng/photo-filter.git
 cd photo-filter
 
 # Create and activate a virtual environment
