@@ -1,0 +1,19 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python3 *)",
+      "Bash(pytest *)",
+      "Bash(./.venv/bin/pytest *)",
+      "Bash(uv run *)",
+      "Bash(./.venv/bin/pip install *)",
+      "Bash(uv pip *)",
+      "Bash(./.venv/bin/photofilter -i raw_test -o raw_best)",
+      "Bash(echo \"Exit: $?\")",
+      "Bash(python *)",
+      "Bash(./.venv/bin/python *)",
+      "Read(//Users/tedyeng/.cache/photofilter/**)",
+      "Bash(shasum -a 256 ~/.cache/photofilter/face_detection_yunet_2023mar.onnx)",
+      "WebSearch"
+    ]
+  }
+}

@@ -1,0 +1,18 @@
+# Gitignore for photo-filter project
+.env
+.venv/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+build/
+develop-eggs/
+dist/
+*.egg-info/
+.pytest_cache/
+raw_test/
+raw_best/
+.DS_Store
+uv.lock

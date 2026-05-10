@@ -1,0 +1,32 @@
+[project]
+name = "photo-filter"
+version = "0.1.0"
+description = "CLI to select the best‑composed and sharpest photo from a burst."
+readme = "README.md"
+requires-python = ">=3.9"
+license = {text = "MIT"}
+authors = [{name = "Your Name", email = "you@example.com"}]
+keywords = ["cli", "photo", "burst", "opencv", "image-processing"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
+
+# Dependencies
+dependencies = [
+    "opencv-python",
+    "pillow",
+    "imagehash",
+    "numpy",
+    "pandas",
+    "python-dotenv",
+    "rawpy",
+]
+
+[project.scripts]
+photofilter = "photofilter.cli:main"
+
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
