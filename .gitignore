@@ -12,7 +12,5 @@ develop-eggs/
 dist/
 *.egg-info/
 .pytest_cache/
-raw_test/
-raw_best/
 .DS_Store
 uv.lock

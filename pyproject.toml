@@ -12,7 +12,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
-
 # Dependencies
 dependencies = [
     "opencv-python",
@@ -21,6 +20,7 @@ dependencies = [
     "numpy",
     "pandas",
     "python-dotenv",
+    "tqdm",
     "rawpy",
 ]
 

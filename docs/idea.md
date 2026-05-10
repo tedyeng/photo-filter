@@ -1,54 +1,65 @@
-# Photo‑Filter CLI – Idea Draft
+# Photo-Filter CLI – Idea Draft
 
 ## Problem Statement
-開發一個跨平台的 CLI 工具，從連拍的 Sony ARW（以及其他 RAW）檔案中自動挑選出構圖最佳、清晰度最高的照片，並將其搬移到使用者指定的目錄。主要目標是減少業餘旅行者在大量相片中手動挑選的時間。
+Develop a cross-platform CLI tool that automatically selects the best-composed and sharpest photo from a burst of Sony ARW (and other RAW) files, and moves it to a user-specified directory. The main goal is to reduce the time amateur travelers spend manually culling large numbers of photos.
+
+How can we accurately segment different burst events from a folder containing mixed burst scenes, and automatically apply different scoring rules based on the main subject (portraits vs. landscapes/action) to select the best photo from each burst sequence?
 
 ## Target User & Motivation
-- **使用者**：業餘旅行者
-- **動機**：旅行拍攝常會產生大量連拍，手動篩選耗時且容易漏掉構圖佳的照片。需要一個快速、可靠且可在不同作業系統上執行的工具來自動完成此工作。
+- **User**: Amateur travelers
+- **Motivation**: Travel photography often results in a massive amount of burst shots. Manually filtering them is time-consuming and prone to missing well-composed photos. A fast, reliable, and cross-platform CLI tool is needed to automate this task.
 
 ## Success Criteria
-- **相似度 > 90%**：自動挑選的照片與人工挑選的最佳照片在構圖與清晰度上相似度達 90% 以上（可透過目視驗證或結構相似性測試）。
-- **處理時間 < 5 秒**：在普通筆記本電腦上處理 100 張 20‑MP RAW 圖片的總時間不超過 5 秒。
+- **Similarity > 90%**: The automatically selected photos should have over 90% similarity in composition and sharpness compared to the best photos selected manually (verifiable via visual inspection or structural similarity tests).
+- **Processing Time < 5s**: Processing 100 20-MP RAW/JPG images on a standard laptop should take no more than 5 seconds in total.
 
 ## Constraints & Technical Preferences
-- 必須支援 **macOS、Windows、Linux**，跨平台執行。
-- 程式語言選擇 **Python**（或 TypeScript）皆可，依照最佳實踐與效能需求決定。
-- 盡量不依賴雲端服務，全部在本機端完成分析。
+- Must support cross-platform execution on **macOS, Windows, and Linux**.
+- **Python** is the language of choice.
+- Avoid relying on cloud services; all analysis must be done locally.
 
 ## Existing Solutions & Gap
-- **沒有使用過** 任何類似工具。市面上雖有商業軟體（如 Adobe Lightroom、Capture One）提供自動優選功能，但往往是 GUI 且需要授權，無法在 CLI 或自動化腳本中使用。
-- 此需求缺少一個輕量、可腳本化、跨平台的 **純 CLI** 解決方案。
+- **No prior use** of similar tools. While commercial software (like Adobe Lightroom, Capture One) offers auto-culling, they are GUI-based, require licenses, and cannot be used in CLI or automation scripts.
+- There is a lack of a lightweight, scriptable, cross-platform **pure CLI** solution for this specific need.
 
 ## Why Now
-- 旅行與相機技術的普及使每次旅行產生的連拍照片量激增，手動篩選的痛點愈發明顯。
-- 現有的開源圖像處理與人臉偵測模型（如 OpenCV YuNet）已足夠成熟，降低開發門檻。
+- The popularization of travel and camera technology has caused an explosion in the volume of burst photos produced per trip, making the pain point of manual culling increasingly obvious.
+- Existing open-source image processing and face detection models (like OpenCV YuNet) are mature enough, lowering the development barrier.
 
 ## Recommended Direction (MVP)
-1. **語言**：使用 **Python** 為主體，利用 `opencv-python`、`pillow`、`imagehash` 以及 `numpy` 進行影像分析。
-2. **核心流程**
-   - 讀取 JPG/RAW（RAW 只做配對搬移），計算**清晰度分數**（Laplacian variance）
-   - 使用 **YuNet 人臉偵測** 取得主體位置，計算 **構圖得分**（主體居中程度 + 對稱性）
-   - 以 **構圖 60% + 清晰度 40%** 合成最終分數，挑選最高者。
-   - 針對相似度高的多張照片（hash 距離 ≤ 10）視為同一「burst」組，僅保留分數最高者，其他搬移至 `_Rejected` 資料夾。
-3. **CLI 介面**
+**Smart Burst Grouping + Rules Engine (The Smart Pipeline)**
+1. **Language & Tech Stack**: Python as the core, utilizing `opencv-python`, `pillow`, `imagehash`, `tqdm`, and `numpy` for image analysis.
+2. **Smart Grouping**: Extract EXIF capture timestamps to calculate time gaps (< 2s) combined with perceptual hash (pHash) distances to accurately segment photos into multiple independent burst events.
+3. **Context-Aware Scoring**:
+   - **Portraits**: If a face is detected using **YuNet**, evaluate the eyes open status (via landmarks), subject centering, and face size to calculate the portrait score.
+   - **Landscapes**: If no face is detected, fall back to landscape mode, scoring purely based on global sharpness (Laplacian variance) and rule-of-thirds/visual balance.
+   - Select the single best image from each burst group based on these scores.
+   - Move the highest-scoring photo and its paired RAW file to the output folder. Move the remaining photos in the burst to a `_Rejected` folder.
+4. **CLI Interface**:
    ```bash
-   photofilter -i <burst_folder> -o <best_folder> [--threshold 0.55]
+   photofilter -i <burst_folder> -o <best_folder> [--threshold 0.55] [--env-file .env]
    ```
-   - `-i` 輸入連拍資料夾
-   - `-o` 輸出最佳照片的目標資料夾
-   - `--threshold` 可調整最小接受分數（預設 0.55）
-4. **測試**：加入單元測試驗證分數計算與檔案搬移邏輯，確保跨平台行為一致。
+   - `-i`: Input burst folder.
+   - `-o`: Destination folder for the best photos.
+   - `--env-file`: Configuration file for adjusting burst thresholds and weights.
+5. **Reporting**: Generate a `defects.csv` report containing a `Burst ID` column to map each file to its respective burst.
+6. **Testing**: Add unit and integration tests for time-delta logic, scoring calculations, and file moving logic to ensure cross-platform consistency.
+
+## Key Assumptions to Validate
+- [x] **EXIF Reliability**: Camera-written EXIF timestamps (down to the second) are accurate enough to distinguish different burst events (with pHash as a secondary check).
+- [x] **Landmarks Accuracy**: The 5 facial landmarks output by the lightweight YuNet model are sufficient for basic heuristic blink detection or centering evaluation.
+- [x] **Performance Impact**: Reading EXIF data and computing landmarks still allows us to meet the 5-second performance target for 100 photos.
 
 ## Not Doing (and Why)
-- **不支援即時影片流**：目前僅處理靜態檔案，避免額外的 I/O 複雜度。
-- **不加入雲端上傳**：符合「不依賴雲端」的限制。
-- **不支援非 RAW 檔案的自動轉檔**：RAW 只作配對搬移，轉檔交給使用者自行處理。
+- **No real-time video stream support**: Currently only processing static files to avoid extra I/O complexity.
+- **No cloud uploads**: Fits the "no cloud dependency" constraint.
+- **No automatic conversion for non-RAW files**: RAW files are only paired and moved; conversion is left to the user.
+- **No Deep Learning Aesthetics Models**: Doing so would slow down processing speed and bloat the CLI package, violating the lightweight, cross-platform goal.
+- **No Image Merging/Stacking**: Attempting to merge multiple faces to fix blinking often creates ghosting artifacts, confusing the user more.
+- **No Advanced Action Recognition**: We will not attempt to semantically understand moments like "the bat hitting the ball", relying strictly on edge sharpness (lack of motion blur) to capture the peak of the action.
 
 ## Open Questions & Decisions
-- 是否需要支援 **多語系訊息**（中文/英文）？ → **English only**（僅提供英文訊息）
-- 是否要提供 **配置檔** 讓使用者客製化權重（構圖 vs 清晰度）？ → **是**，將提供 YAML 或 JSON 配置檔以調整權重
-- 是否考慮 **GPU 加速**（例如 CUDA）以進一步縮短處理時間？ → **是**，在支援 CUDA 的環境下使用 GPU 加速的選項
-
----
-*Generated by Claude Code – idea draft*
+- (Resolved) Should it support multi-language messages? -> **English only**.
+- (Resolved) Should we provide a config file to customize weights? -> **Yes**, using a `.env` file to adjust weights (`WEIGHT_COMPOSITION`, `WEIGHT_SHARPNESS`) and `BURST_TIME_THRESHOLD`.
+- (Resolved) Consider GPU acceleration? -> **Yes**, optional GPU acceleration if CUDA is available.
+- (Resolved) What should the default burst time interval be? -> Based on timestamp analysis of example files, the interval within bursts is < 1s, and between different bursts is ~8s. Thus, the default threshold is set to **2.0 seconds**.

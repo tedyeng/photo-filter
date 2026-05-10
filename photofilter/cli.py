@@ -1,5 +1,6 @@
 import argparse
 import sys
+import time
 from pathlib import Path
 from .core import process_folder
 from .utils import load_config
@@ -26,7 +27,10 @@ def main(argv: list = None) -> int:
     args = parser.parse_args(argv)
     config = load_config(args.env_file)
     use_gpu = args.gpu and config.get('gpu_enabled', True)
-    # Call core processing (implementation will be added later)
+    
+    start_time = time.time()
+    
+    # Call core processing
     process_folder(
         input_path=args.input,
         output_path=args.output,
@@ -34,6 +38,9 @@ def main(argv: list = None) -> int:
         config=config,
         use_gpu=use_gpu,
     )
+    
+    end_time = time.time()
+    print(f"✨ Finished in {end_time - start_time:.2f} seconds.")
     return 0
 
 if __name__ == '__main__':

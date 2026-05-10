@@ -11,6 +11,7 @@ Develop a cross‑platform command‑line tool that automatically selects the be
   - `imagehash` (perceptual hashing for grouping validation)
   - `numpy`
   - `pandas` (CSV report generation)
+  - `tqdm` (Progress bar and execution time display)
 - **Optional GPU**: CUDA‑enabled OpenCV for accelerated processing when available.
 
 ## Commands

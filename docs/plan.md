@@ -82,6 +82,15 @@ Update the existing Photo-Filter CLI to support a "Smart Pipeline". The tool wil
   - **Files likely touched:** `README.md`, `.github/workflows/ci.yml`
   - **Estimated scope:** S
 
+- [ ] **Task 7: Progress Bar & Execution Time**
+  - **Description:** Add `tqdm` to dependencies. Wrap the main image processing loops in `core.process_folder` with a progress bar. Track and print the total execution time at the end.
+  - **Acceptance criteria:**
+    - [ ] A progress bar is visible during processing.
+    - [ ] Total elapsed time is printed after completion.
+  - **Verify:** Run the CLI manually on `raw_test` and observe standard output.
+  - **Files likely touched:** `pyproject.toml`, `photofilter/core.py`, `photofilter/cli.py`
+  - **Estimated scope:** S
+
 ## Risks and Mitigations
 | Risk | Impact | Mitigation |
 |------|--------|------------|

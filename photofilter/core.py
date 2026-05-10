@@ -176,6 +176,7 @@ def score_portrait(faces, h: int, w: int) -> float:
 
 import imagehash
 from datetime import datetime
+from tqdm import tqdm
 from .utils import hash_image, move_to, get_exif_time
 
 def group_bursts(image_infos: list[dict], time_thresh: float = 2.0, hash_thresh: int = 10) -> list[list[dict]]:
@@ -272,7 +273,7 @@ def process_folder(input_path: Path, output_path: Path, threshold: float = 0.55,
         jpg_files = image_files
 
     image_infos = []
-    for f in jpg_files:
+    for f in tqdm(jpg_files, desc="Extracting EXIF & Hash"):
         ph = hash_image(f)
         t = get_exif_time(f)
         image_infos.append({
@@ -287,7 +288,7 @@ def process_folder(input_path: Path, output_path: Path, threshold: float = 0.55,
     rejected_dir = input_path / '_Rejected'
     report_rows = []
     
-    for burst_id, burst in enumerate(bursts, start=1):
+    for burst_id, burst in enumerate(tqdm(bursts, desc="Processing Bursts"), start=1):
         for info in burst:
             faces, h, w = detect_faces(info['path'])
             has_face = faces is not None and len(faces) > 0
