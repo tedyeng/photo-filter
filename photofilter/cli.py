@@ -25,11 +25,19 @@ def build_parser() -> argparse.ArgumentParser:
 def main(argv: list = None) -> int:
     parser = build_parser()
     args = parser.parse_args(argv)
+    # Validate input directory exists
+    if not args.input.is_dir():
+        parser.error(f"Input path does not exist or is not a directory: {args.input}")
+    # Ensure output directory exists or create it
+    args.output.mkdir(parents=True, exist_ok=True)
+    # Prevent input and output being the same directory
+    if args.input.resolve() == args.output.resolve():
+        parser.error("Input and output directories must be different.")
     config = load_config(args.env_file)
     use_gpu = args.gpu and config.get('gpu_enabled', True)
-    
+
     start_time = time.time()
-    
+
     # Call core processing
     process_folder(
         input_path=args.input,
@@ -38,7 +46,7 @@ def main(argv: list = None) -> int:
         config=config,
         use_gpu=use_gpu,
     )
-    
+
     end_time = time.time()
     print(f"✨ Finished in {end_time - start_time:.2f} seconds.")
     return 0

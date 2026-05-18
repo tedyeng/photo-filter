@@ -79,12 +79,12 @@ def hash_image(image_path: Path) -> str:
 
 def move_to(src: Path, dest_dir: Path) -> None:
     """Move a file to the destination directory, creating it if needed.
-    Logs a warning if the destination already contains a file with the same name.
+    Raises an error if a file with the same name already exists to avoid accidental overwrites.
     """
     dest_dir.mkdir(parents=True, exist_ok=True)
     dest = dest_dir / src.name
     if dest.exists():
-        logger.warning('Overwriting existing file: %s', dest)
+        raise FileExistsError(f"Destination file already exists and would be overwritten: {dest}")
     src.replace(dest)
 
 def get_exif_time(image_path: Path) -> datetime | None:

@@ -91,20 +91,40 @@ def compute_sharpness(image_path: Path) -> float:
 # ---------------------------------------------------------------------------
 
 def _ensure_yunet_model() -> Path:
-    """Download YuNet ONNX model if not present and return its Path.
-    Mirrors the logic from `cull_defects.py`.
+    """Download YuNet ONNX model if not present and verify its SHA‑256 hash.
+    Returns the path to the verified model file.
     """
     YUNET_MODEL_URL = "https://github.com/opencv/opencv_zoo/raw/main/models/face_detection_yunet/face_detection_yunet_2023mar.onnx"
     model_path = Path.home() / ".cache" / "photofilter" / "face_detection_yunet_2023mar.onnx"
     if model_path.exists():
-        return model_path
+        # Verify existing file hash
+        if _verify_file_hash(model_path, _YUNET_MODEL_HASH):
+            return model_path
+        else:
+            logger.warning("Existing YuNet model hash mismatch; re‑downloading.")
+            model_path.unlink()
     model_path.parent.mkdir(parents=True, exist_ok=True)
     try:
         urllib.request.urlretrieve(YUNET_MODEL_URL, str(model_path))
     except Exception:
         # Fallback to curl for macOS SSL issues
         subprocess.run(["curl", "-L", "-o", str(model_path), YUNET_MODEL_URL], check=True)
+    # Verify downloaded file
+    if not _verify_file_hash(model_path, _YUNET_MODEL_HASH):
+        raise RuntimeError("Downloaded YuNet model failed SHA‑256 verification.")
     return model_path
+
+def _verify_file_hash(file_path: Path, expected_hash: str) -> bool:
+    """Compute SHA‑256 of *file_path* and compare to *expected_hash*.
+    Returns True if they match.
+    """
+    sha256 = hashlib.sha256()
+    with open(file_path, "rb") as f:
+        for chunk in iter(lambda: f.read(8192), b""):
+            sha256.update(chunk)
+    actual = sha256.hexdigest()
+    return actual.lower() == expected_hash.lower()
+
 
 
 def _get_face_detector(w: int, h: int):
@@ -259,7 +279,7 @@ def process_folder(input_path: Path, output_path: Path, threshold: float = 0.55,
     2. Extract EXIF time and perceptual hash.
     3. Group by time and hash (burst detection).
     4. Within each burst group, detect faces and score accordingly.
-    5. Move selected image (and its RAW pair) to output_path.
+    5. Move selected image (and its RAW pair) to *output_path* **only if** its composite score meets *threshold*.
     6. Move all others (and their RAW pairs) to a `_Rejected` folder.
     """
     # Gather all image files (JPEG + RAW) case‑insensitively, ignoring macOS metadata files
@@ -313,18 +333,16 @@ def process_folder(input_path: Path, output_path: Path, threshold: float = 0.55,
         best = max(burst, key=lambda i: (i['has_face'], i['composite']))
         
         for info in burst:
-            status = 'KEEP' if info is best else 'REJECT'
-            
-            if status == 'KEEP':
-                _move_image_and_raw(info['path'], output_path)
-            else:
-                _move_image_and_raw(info['path'], rejected_dir)
-                    
+            keep = (info is best) and (info['composite'] >= threshold)
+            status = 'KEEP' if keep else 'REJECT'
+            dest_dir = output_path if keep else rejected_dir
+            _move_image_and_raw(info['path'], dest_dir)
+
             report_rows.append({
                 'Filename': info['path'].name,
                 'Burst ID': info['burst_id'],
                 'Status': status,
-                'Reason': 'Not best' if status == 'REJECT' else '',
+                'Reason': '' if keep else ('Below threshold' if info is best else 'Not best'),
                 'Has Face': 'Yes' if info['has_face'] else 'No',
                 'Portrait Score': f"{info['portrait_score']:.2f}",
                 'Landscape Score': f"{info['landscape_score']:.2f}",
@@ -334,9 +352,15 @@ def process_folder(input_path: Path, output_path: Path, threshold: float = 0.55,
             })
             
     if report_rows:
-        import pandas as pd
+        import csv
         csv_path = input_path / 'defects.csv'
-        pd.DataFrame(report_rows).to_csv(csv_path, index=False)
+        with open(csv_path, 'w', newline='') as f:
+            writer = csv.DictWriter(f, fieldnames=[
+                'Filename', 'Burst ID', 'Status', 'Reason', 'Has Face',
+                'Portrait Score', 'Landscape Score', 'Composite', 'Hash', 'Has RAW'
+            ])
+            writer.writeheader()
+            writer.writerows(report_rows)
         print(f"📑 Report saved to: {csv_path}")
         
     if use_gpu:
